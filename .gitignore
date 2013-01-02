@@ -13,3 +13,10 @@
 # Ignore all logfiles and tempfiles.
 /log/*.log
 /tmp
+
+# Ignore local bundle files 'bundle install --withouth-production' > 'bundle --binstubs'
+/bin
+/bundler_stubs
+
+# Ignore mac generated files
+.DS_Store
