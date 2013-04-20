@@ -32,8 +32,12 @@ group :test do
     gem 'win32console', '1.3.0'	
     gem 'wdm', '~> 0.0.3'
 	gem 'guard-spork', '0.3.2'
-	gem 'spork', '0.9.0'    
+	gem 'spork', '0.9.0'
 end
+
+group :test, :development do
+  gem 'factory_girl_rails'
+end	
 
 group :production do
 	gem 'pg', '0.12.2'
