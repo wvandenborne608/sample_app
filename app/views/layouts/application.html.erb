@@ -16,6 +16,10 @@
       <%= yield %>
       <%= render 'layouts/footer' %>
       <%= debug(params) if Rails.env.development? %>
+      <%= debug(request.flash) if Rails.env.development? %>
+      <%= debug(request.server_software) if Rails.env.development? %>
+      <!--<br />-->
+      <%#= content_tag(:div, ("original_fullpath=" + request.original_fullpath), class: "footer") if Rails.env.development? %>
     </div>
   </body>
 </html>

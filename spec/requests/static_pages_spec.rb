@@ -16,6 +16,55 @@ describe "Static pages" do
 
     it_should_behave_like "all static pages"
     it { should_not have_selector 'title', text: '| Home' }
+
+    describe "for signed-in users" do
+      let(:user) { FactoryGirl.create(:user) }
+      before do
+        FactoryGirl.create(:micropost, user: user, content: "Lorem ipsum")
+        FactoryGirl.create(:micropost, user: user, content: "Dolor sit amet")
+        valid_signin user
+        visit root_path
+      end
+
+      it "should render the user's feed" do
+        user.feed.each do |item|
+          page.should have_selector("li##{item.id}", text: item.content)
+        end
+      end
+
+      it "should show the correct micropost count" do
+        page.should have_selector 'span', text: "#{user.feed.count} microposts"
+      end
+
+      it "should show the correct micropost count pluralization" do
+        micropost = user.feed.first.destroy
+        visit root_path
+        page.should have_selector 'span', text: "#{user.feed.count} micropost"
+      end
+    end
+  end
+
+  describe "pagination on home page for a signed-in user" do
+    let(:pagination_user) { FactoryGirl.create(:user) }
+    before do
+      35.times { FactoryGirl.create(:micropost, user: pagination_user) }
+      valid_signin pagination_user
+      visit root_path
+    end
+
+    it { should have_selector('div.pagination') }
+
+    it "should list each micropost of the first page" do
+      pagination_user.feed.paginate(page: 1).each do |mpost|
+        page.should have_selector("li##{mpost.id}", text: mpost.content)
+      end
+    end
+
+    it "should NOT list each micropost of the second page" do
+      pagination_user.feed.paginate(page: 2).each do |mpost|
+        page.should_not have_selector("li##{mpost.id}", text: mpost.content)
+      end
+    end
   end
 
   describe "Help page" do

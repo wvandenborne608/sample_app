@@ -1,14 +1,19 @@
 class UsersController < ApplicationController
-  before_filter :signed_in_user, only: [:index, :edit, :update, :destroy]
-  before_filter :correct_user, only: [:edit, :update]
-  before_filter :admin_user,  only: :destroy
+  before_filter :require_signed_in_user, only: [:index, :edit, :update, :destroy]
+  before_filter :require_correct_user, only: [:edit, :update]
+  before_filter :require_admin_user, only: [:destroy]
 
-  def index
-    @users = User.paginate(page: params[:page])
-  end
-  
+  # Signed-in users have no reason to access the new and create actions.
+  before_filter :require_non_signed_in_user, only: [:new, :create]
+
   def show
     @user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(page: params[:page])
+  end
+
+  def index
+    ##@users = User.all
+    @users = User.paginate(page: params[:page])
   end
 
   def new
@@ -40,31 +45,29 @@ class UsersController < ApplicationController
       render 'edit'
     end
   end
-  
+
   def destroy
-    User.find(params[:id]).destroy
+    #1 User.find(params[:id]).destroy
+    @user.destroy
     flash[:success] = "User destroyed."
     redirect_to users_url
   end
 
   private
 
-    def signed_in_user
-      #1 flash[:notice] = "Please sign in."
-      #1 redirect_to signin_url
-      #2 redirect_to signin_url, notice: "Please sign in." unless signed_in?
-      unless signed_in?
-        store_location
-        redirect_to signin_url, notice: "Please sign in."
-      end
+    def require_non_signed_in_user
+      redirect_to(root_path) if signed_in?
     end
 
-    def correct_user
+    def require_correct_user
       @user = User.find(params[:id])
       redirect_to(root_path) unless current_user?(@user)
     end
-	
-	def admin_user
+
+    def require_admin_user
+      @user = User.find(params[:id])
       redirect_to(root_path) unless current_user.admin?
+      redirect_to(root_path) if current_user?(@user)
+      #redirect_to(root_path, error: "You cannot delete your own user") if current_user?(@user)
     end
 end

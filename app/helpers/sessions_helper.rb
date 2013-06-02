@@ -21,6 +21,16 @@ module SessionsHelper
     user == current_user
   end
 
+  def require_signed_in_user
+    #1 flash[:notice] = "Please sign in."
+    #1 redirect_to signin_url
+    #2 redirect_to signin_url, notice: "Please sign in." unless signed_in?
+    unless signed_in?
+      store_location
+      redirect_to signin_url, notice: "Please sign in."
+    end
+  end
+
   def sign_out
     self.current_user = nil
     cookies.delete(:remember_token)

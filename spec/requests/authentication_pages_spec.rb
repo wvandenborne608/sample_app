@@ -14,12 +14,20 @@ describe "Authentication" do
   describe "signin" do
     before { visit signin_path }
 
-    describe "with invalid information" do
+    describe "with invalid information" do      
+      
+      let(:user) { FactoryGirl.create(:user) }
+
       before { click_button "Sign in" }
 
       it { should have_selector('title', text: 'Sign in') }
       #it { should have_selector('div.alert.alert-error', text: 'Invalid') }
       it { should have_error_message('Invalid') }
+
+      it { should_not have_link('Users',    href: users_path) }
+      it { should_not have_link('Profile', href: user_path(user)) }
+      it { should_not have_link('Settings', href: edit_user_path(user)) }
+      it { should_not have_link('Sign out', href: signout_path) }
 
       describe "after visiting another page" do
         before { click_link "Home" }
@@ -37,10 +45,12 @@ describe "Authentication" do
       before { valid_signin(user) }
 
       it { should have_selector('title', text: user.name) }
-	  it { should have_link('Users',    href: users_path) }
+
+      it { should have_link('Users',    href: users_path) }
       it { should have_link('Profile', href: user_path(user)) }
       it { should have_link('Settings', href: edit_user_path(user)) }
       it { should have_link('Sign out', href: signout_path) }
+      
       it { should_not have_link('Sign in', href: signin_path) }
 
       describe "followed by signout" do
@@ -68,6 +78,20 @@ describe "Authentication" do
           it "should render the desired protected page" do
             page.should have_selector('title', text: 'Edit user')
           end
+
+          describe "when signing in again" do
+            before do
+              delete signout_path
+              visit signin_path
+              fill_in "Email",    with: user.email
+              fill_in "Password", with: user.password
+              click_button "Sign in"
+            end
+
+            it "should render the default (profile) page" do
+              page.should have_selector('title', text: user.name) 
+            end
+          end
         end
       end
 
@@ -82,13 +106,44 @@ describe "Authentication" do
           before { put user_path(user) }
           specify { response.should redirect_to(signin_path) }
         end
-		
-		describe "visiting the user index" do
+
+        describe "visiting the user index" do
           before { visit users_path }
           it { should have_selector('title', text: 'Sign in') }
         end
-		
       end
+
+      describe "in the Microposts controller" do
+
+        describe "submitting to the create action" do
+          before { post microposts_path }
+          specify { response.should redirect_to(signin_path) }
+        end
+
+        describe "submitting to the destroy action" do
+          before { delete micropost_path(FactoryGirl.create(:micropost)) }
+          specify { response.should redirect_to(signin_path) }
+        end
+      end
+    end
+
+    describe "for signed-in users" do
+      let(:user) { FactoryGirl.create(:user) }
+      before { valid_signin user }
+
+      describe "in the Users controller" do
+
+        describe "visiting Users#new page" do
+          before { get new_user_path } 
+          specify { response.should redirect_to(root_path) }
+        end
+
+        describe "submitting a POST request to the Users#create action" do
+          before { post users_path() }
+          specify { response.should redirect_to(root_path) }
+        end
+      end
+
     end
 
     describe "as wrong user" do
@@ -119,5 +174,16 @@ describe "Authentication" do
       end
     end
 
+    describe "as an admin user" do
+      let(:admin_user) { FactoryGirl.create(:admin) }
+
+      before { valid_signin admin_user }
+
+      describe "submitting a DELETE request to the Users#destroy action to delete itself" do
+        before { delete user_path(admin_user) }
+        specify { response.should redirect_to(root_path) }
+        #it { should have_error_message('You cannot delete your own user') }
+      end
+    end
   end
 end
